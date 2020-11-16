@@ -5,13 +5,17 @@ const client = new Discord.Client();
 
 // All playlists import
 const rapUS2000 = require("./assets/playlists/rapUS2000.json");
+const rapFRChill = require("./assets/playlists/rapFRChill.json");
 
 // Libraries
 const { formatSongs, loopPlaylist, playSongFromUrl } = require('./libs/songs');
 const { sendMessage } = require('./libs/messages')
 
 // Playlists object
-const playlists = { rapUS2000 };
+const playlists = { 
+  rapUS2000,
+  rapFRChill,
+};
 
 // Commands params
 let commandMusicIdentifier = null; // First argument of a command like 'play', 'next' etc ...
@@ -20,6 +24,7 @@ let modifiers = { loop: false }; // The third argument of a command who will cha
 
 // Global vars
 let songs = null;
+let lastMessageBot = null;
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`); // Display a log when the bot is ready
@@ -49,7 +54,7 @@ client.on("message", async msg => {
     setTimeout(() => { // TODO: SUE A REAL TIMEOUT WHO WILL WAIT 1 SECOND AFTER THE SONG NEXTED
       modifiers.loop ? songs.push(songs.shift()) : songs.shift();
       if (songs && songs.length) {
-        msg.channel.send(`Musique suivante - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
+        msg.channel.send(`Musique en cours - ${songs[0].title}`) // Display a message in a text channel who the bot has been called
         tryPlayMusic(voiceChannel, msg);
       } else leaveChannel(voiceChannel, msg);
     }, 1000);

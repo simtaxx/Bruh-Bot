@@ -9,7 +9,7 @@ const formatSongs = (songs, playlist) => {
 
 const loopPlaylist = async ({ songs, tryPlayMusic, voiceChannel, leaveChannel, msg }) => {
   if (songs && songs.length) {
-    msg.channel.send(`Musique suivante - ${songs[0].title}`);
+    msg.channel.send(`Musique en cours - ${songs[0].title}`);
     tryPlayMusic(voiceChannel, msg);
   } else leaveChannel(voiceChannel, msg);
 }
