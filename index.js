@@ -6,16 +6,18 @@ const client = new Discord.Client();
 // All playlists import
 const rapUS2000 = require("./assets/playlists/rapUS2000.json");
 const rapFRChill = require("./assets/playlists/rapFRChill.json");
+const watiSon = require("./assets/playlists/watiSon.json");
 
 // Libraries
-const { formatSongs, loopPlaylist, playSongFromUrl } = require('./libs/songs');
+const { formatSongs, loopPlaylist } = require('./libs/songs');
 const { sendMessage } = require('./libs/messages')
 
 // Playlists object
-const playlists = { 
+const playlists = [
   rapUS2000,
   rapFRChill,
-};
+  watiSon,
+];
 
 // Commands params
 let commandMusicIdentifier = null; // First argument of a command like 'play', 'next' etc ...
@@ -37,14 +39,22 @@ client.on("message", async msg => {
   commandMusicParam = msg.content.replace(/play /, ""); // Get all the string after 'play'
 
   if (commandMusicIdentifier) {
-    commandMusicParam = commandMusicParam.split('-')[0].trim(); // Create an array with [0] as an url or a playlist name and [1] as a modifier
-    if (playlists[commandMusicParam]) {
-      checkModifier(commandMusicParam);
-      songs = formatSongs(songs, playlists[commandMusicParam]);
-      loopPlaylist({ songs, tryPlayMusic, voiceChannel, leaveChannel, msg });
-    } else {
-      playSongFromUrl(voiceChannel, msg, commandMusicParam);
-    }
+    commandMusicParam = commandMusicParam.split('-'); // Create an array with [0] as an url or a playlist name and [1] as a modifier
+    let count = playlists.length;
+    playlists.find(playlist => {
+      if (playlist.name.toLowerCase() === commandMusicParam[0].toLowerCase().trim()) {
+        checkModifier(commandMusicParam);
+        songs = formatSongs(playlist);
+        loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
+      } else if (commandMusicParam[0].startsWith('https://')) {
+        checkModifier(commandMusicParam);
+        playYoutubeSong(voiceChannel, msg);
+      } else if (count === 1) {
+        msg.channel.send(sendMessage('notFound'));
+      }
+      count--;
+      console.log(count)
+    })
   }
 
   if (msg.content === "stop") {
@@ -55,33 +65,43 @@ client.on("message", async msg => {
       modifiers.loop ? songs.push(songs.shift()) : songs.shift();
       if (songs && songs.length) {
         msg.channel.send(`Musique en cours - ${songs[0].title}`) // Display a message in a text channel who the bot has been called
-        tryPlayMusic(voiceChannel, msg);
+        playYoutubeSong(voiceChannel, msg);
       } else leaveChannel(voiceChannel, msg);
     }, 1000);
-  } else if (msg.content === "replay") {
-    tryPlayMusic(voiceChannel, msg);
+  } else if (msg.content === "replay" && songs) {
+    playYoutubeSong(voiceChannel, msg);
     msg.channel.send(sendMessage('replay', songs[0].title));
   } else if (msg.content === "help") {
     msg.channel.send(sendMessage('help'));
   }
 })
 
-// tryPlayMusic will play your playlist songs
-const tryPlayMusic = async (voiceChannel, msg) => {
+// playYoutubeSong will play your playlist songs
+const playYoutubeSong = async (voiceChannel, msg) => {
   try {
-    if (songs[0] === undefined) {
+    if (songs && songs[0] === undefined) {
       leaveChannel(voiceChannel, msg);
     }
     const connection = await voiceChannel.join(); // Join the user vocal channel
-    await connection.play(ytdl(songs[0].url, { filter: 'audioonly' })) // play the song in the queue
-    .on('finish', () => { // when the song is over, the next song will be called
-      modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-      loopPlaylist({ songs, tryPlayMusic, voiceChannel, leaveChannel, msg })
-    })
+    if (commandMusicParam[0].startsWith('https://')) {
+      await connection.play(ytdl(commandMusicParam[0], { filter: 'audioonly' })).on('finish', () => {
+        if (modifiers.loop) {
+          playYoutubeSong(voiceChannel, msg)
+        } else leaveChannel(voiceChannel, msg);
+      })
+    } else {
+      await connection.play(ytdl(songs[0].url, { filter: 'audioonly' })) // play the song in the queue
+      .on('finish', () => { // when the song is over, the next song will be called
+        modifiers.loop ? songs.push(songs.shift()) : songs.shift();
+        loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg })
+      })
+    }
   } catch (e) { 
     console.log("L'url ne correspond à aucune vidéo youtube", e);
-    modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-    return msg.channel.send(sendMessage('notFound'));
+    if (!commandMusicParam[0].startsWith('https://')) {
+      modifiers.loop ? songs.push(songs.shift()) : songs.shift();
+    }
+    msg.channel.send(sendMessage('notFound'));
   }
 }
 
