@@ -1,5 +1,6 @@
+/* eslint-disable no-undef */
 const sendMessage = (command, ...param) => {
-  
+
   const messages = {
     help: `Voici les commandes dont tu as besoin:
 
@@ -11,6 +12,8 @@ const sendMessage = (command, ...param) => {
 
     - LISTE DES PLAYLISTS DISPONIBLES :
       - rapUS2000 (playlist musique us hype des années 2000)
+      - rapFRChill (playlist rap fr pour se détendre)
+      - watiSon (une wati playlist)
 
     - TIPS : 
       - ajouter "-loop" à la fin d'une commande playlist permet de la faire jouer infiniment`,

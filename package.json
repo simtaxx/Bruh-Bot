@@ -1,24 +1,28 @@
 {
-  "name": "DiscordBot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "discord.js": "^12.4.1",
-    "dotenv": "^8.2.0",
-    "ffmpeg-static": "^4.2.7",
-    "opusscript": "^0.0.7",
-    "ytdl-core": "^3.4.2",
-    "ytdl-core-discord": "^1.2.4"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.6"
-  }
+    "name": "DiscordBot",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "nodemon index.js",
+        "lint": "eslint ."
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "discord.js": "^12.4.1",
+        "dotenv": "^8.2.0",
+        "ffmpeg-static": "^4.2.7",
+        "opusscript": "^0.0.7",
+        "ytdl-core": "^4.4.3",
+        "ytdl-core-discord": "^1.2.4",
+        "ytpl": "^2.0.4"
+    },
+    "devDependencies": {
+        "babel-eslint": "^10.1.0",
+        "eslint": "^7.17.0",
+        "nodemon": "^2.0.6"
+    }
 }
