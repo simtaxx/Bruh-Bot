@@ -27,6 +27,7 @@ let modifiers = { loop: false }; // The third argument of a command who will cha
 
 // Global vars
 let songs = null;
+const songsQueue = [];
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`); // Display a log when the bot is ready
@@ -49,7 +50,10 @@ client.on('message', async msg => {
       loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
     } else if (commandMusicParam[0].startsWith('https://')) {
       checkModifier(commandMusicParam);
-      playYoutubeSong(voiceChannel, msg);
+      songsQueue.push(commandMusicParam[0]);
+      if (songsQueue.length <= 1) {
+        playYoutubeSong(voiceChannel, msg);
+      }
     } else {
       msg.channel.send(sendMessage('notFound'));
     }
@@ -60,9 +64,17 @@ client.on('message', async msg => {
     voiceChannel.leave(); // The bot will leave the channel
   } else if (msg.content === 'next') {
     setTimeout(() => { // TODO: SUE A REAL TIMEOUT WHO WILL WAIT 1 SECOND AFTER THE SONG NEXTED
-      modifiers.loop ? songs.push(songs.shift()) : songs.shift();
+      if (songs) {
+        modifiers.loop ? songs.push(songs.shift()) : songs.shift();
+      }
+      if (songsQueue) {
+        modifiers.loop ? songsQueue.push(songsQueue.shift()) : songsQueue.shift();
+      }
       if (songs && songs.length) {
         msg.channel.send(`Musique en cours - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
+        playYoutubeSong(voiceChannel, msg);
+      } else if (songsQueue &&  songsQueue.length) {
+        msg.channel.send(`Musique suivante`); // Display a message in a text channel who the bot has been called
         playYoutubeSong(voiceChannel, msg);
       } else leaveChannel(voiceChannel, msg);
     }, 1000);
@@ -81,9 +93,12 @@ const playYoutubeSong = async(voiceChannel, msg) => {
       leaveChannel(voiceChannel, msg);
     }
     const connection = await voiceChannel.join(); // Join the user vocal channel
-    if (commandMusicParam[0].startsWith('https://')) {
-      await connection.play(ytdl(commandMusicParam[0], { filter: 'audioonly' })).on('finish', () => {
+    if (songsQueue && songsQueue[0].startsWith('https://')) {
+      await connection.play(ytdl(songsQueue[0], { filter: 'audioonly' })).on('finish', () => {
+        songsQueue.shift();
         if (modifiers.loop) {
+          playYoutubeSong(voiceChannel, msg);
+        } else if (songsQueue.length) {
           playYoutubeSong(voiceChannel, msg);
         } else leaveChannel(voiceChannel, msg);
       });
