@@ -43,7 +43,7 @@ client.on('message', async msg => {
   commandMusicParam = msg.content.replace(/play /, ''); // Get all the string after 'play'
 
   if (commandMusicIdentifier) {
-    commandMusicParam = commandMusicParam.split('-'); // Create an array with [0] as an url or a playlist name and [1] as a modifier
+    commandMusicParam = commandMusicParam.split('*'); // Create an array with [0] as an url or a playlist name and [1] as a modifier
     if (playlists[`${commandMusicParam[0]}`]) {
       checkModifier(commandMusicParam);
       songs = formatSongs(playlists[`${commandMusicParam[0]}`]);
