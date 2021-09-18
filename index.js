@@ -1,6 +1,7 @@
 /* eslint-disable no-undef */
 require('dotenv').config();
 const ytdl = require('ytdl-core');
+const ytpl = require('ytpl');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
@@ -28,6 +29,7 @@ let modifiers = { loop: false }; // The third argument of a command who will cha
 // Global vars
 let songs = null;
 const songsQueue = [];
+let shouldStartPlayMethod = true;
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`); // Display a log when the bot is ready
@@ -50,7 +52,23 @@ client.on('message', async msg => {
       loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
     } else if (commandMusicParam[0].startsWith('https://')) {
       checkModifier(commandMusicParam);
-      songsQueue.push(commandMusicParam[0]);
+      if (commandMusicParam[0].match('playlist')) {
+        songsQueue.unshift(commandMusicParam[0]);
+      } else {
+        songsQueue.push(commandMusicParam[0]);
+      }
+      if (songsQueue && songsQueue[0].match('playlist')) {
+        const playlist = await ytpl(songsQueue[0]);
+        playlist.items.forEach((song) => {
+          songsQueue.push(song.shortUrl);
+        });
+        songsQueue.splice(songsQueue.findIndex(song => song.match('playlist')), 1);
+        if (!songsQueue.length) shouldStartPlayMethod = true;
+        if (shouldStartPlayMethod) {
+          shouldStartPlayMethod = false;
+          playYoutubeSong(voiceChannel, msg);
+        }
+      }
       if (songsQueue.length <= 1) {
         playYoutubeSong(voiceChannel, msg);
       }
