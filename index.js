@@ -40,8 +40,8 @@ client.on('message', async msg => {
   if (voiceChannel === null) {
     return;
   }
-  commandMusicIdentifier = msg.content.startsWith('play'); // Check if the command start with play
-  commandMusicParam = msg.content.replace(/play /, ''); // Get all the string after 'play'
+  commandMusicIdentifier = msg.content.startsWith('play') || msg.content.startsWith('p'); // Check if the command start with play
+  commandMusicParam = msg.content.startsWith('play') ? msg.content.replace(/play /, '') : msg.content.replace(/p /, ''); // Get all the string after 'play'
 
   if (commandMusicIdentifier) {
     commandMusicParam = commandMusicParam.split('*'); // Create an array with [0] as an url or a playlist name and [1] as a modifier
@@ -52,22 +52,27 @@ client.on('message', async msg => {
     } else if (commandMusicParam[0].startsWith('https://')) {
       checkModifier(commandMusicParam);
       if (commandMusicParam[0].match('playlist')) {
-        const playlist = await ytpl(commandMusicParam[0]);
-        playlist.items.forEach((song) => {
-          if (song.shortUrl.startsWith('https://')) {
-            songs.push({title: song.title, url: song.shortUrl});
-          }
-        });
+        const playlist = await ytpl(commandMusicParam[0])
+          .catch((err) => {
+            msg.channel.send(sendMessage('notFound'));
+          });
+        if (playlist && playlist.items && playlist.items.length) {
+          playlist.items.forEach((song) => {
+            if (song.shortUrl.startsWith('https://')) {
+              songs.push({title: song.title, url: song.shortUrl});
+            }
+          });
+        }
       } else {
-        const songObject = await ytdl.getBasicInfo(commandMusicParam[0]);
-        if (songObject.videoDetails.video_url.startsWith('https://')) {
+        const songObject = await ytdl.getBasicInfo(commandMusicParam[0])
+          .catch((err) => {
+            msg.channel.send(sendMessage('notFound'));
+          });
+        if (songObject && songObject.videoDetails) {
           songs.push({title: songObject.videoDetails.title, url: songObject.videoDetails.video_url});
-        } else if (songs && !songs.length) {
-          msg.channel.send(sendMessage('notFound'));
-          leaveChannel(voiceChannel, msg, 2000);
         }
       }
-      if (shouldStartPlayMethod) {
+      if (shouldStartPlayMethod && (songs && songs.length)) {
         shouldStartPlayMethod = false;
         loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
       }
