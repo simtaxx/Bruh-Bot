@@ -54,11 +54,18 @@ client.on('message', async msg => {
       if (commandMusicParam[0].match('playlist')) {
         const playlist = await ytpl(commandMusicParam[0]);
         playlist.items.forEach((song) => {
-          songs.push({title: song.title, url: song.shortUrl});
+          if (song.shortUrl.startsWith('https://')) {
+            songs.push({title: song.title, url: song.shortUrl});
+          }
         });
       } else {
         const songObject = await ytdl.getBasicInfo(commandMusicParam[0]);
-        songs.push({title: songObject.videoDetails.title, url: songObject.videoDetails.video_url});
+        if (songObject.videoDetails.video_url.startsWith('https://')) {
+          songs.push({title: songObject.videoDetails.title, url: songObject.videoDetails.video_url});
+        } else if (songs && !songs.length) {
+          msg.channel.send(sendMessage('notFound'));
+          leaveChannel(voiceChannel, msg, 2000);
+        }
       }
       if (shouldStartPlayMethod) {
         shouldStartPlayMethod = false;
@@ -80,7 +87,7 @@ client.on('message', async msg => {
         modifiers.loop ? songs.push(songs.shift()) : songs.shift();
         msg.channel.send(`Musique en cours - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
         playYoutubeSong(voiceChannel, msg);
-      } else leaveChannel(voiceChannel, msg);
+      } else leaveChannel(voiceChannel, msg, 2000);
     }, 1000);
   } else if (msg.content === 'replay') {
     playYoutubeSong(voiceChannel, msg);
@@ -94,7 +101,7 @@ client.on('message', async msg => {
 const playYoutubeSong = async(voiceChannel, msg) => {
   try {
     if (songs && songs[0] === undefined) {
-      leaveChannel(voiceChannel, msg);
+      leaveChannel(voiceChannel, msg, 300000);
     }
     const connection = await voiceChannel.join(); // Join the user vocal channel
     if (songs && songs.length && songs[0].url.startsWith('https://')) {
@@ -109,24 +116,25 @@ const playYoutubeSong = async(voiceChannel, msg) => {
           loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
         } else {
           shouldStartPlayMethod = true;
-          leaveChannel(voiceChannel, msg);
+          leaveChannel(voiceChannel, msg, 300000);
         }
       });
     }
   } catch (e) {
     console.log("L'url ne correspond à aucune vidéo youtube", e);
-    if (!songs[0].url.startsWith('https://')) {
-      modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-    }
     msg.channel.send(sendMessage('notFound'));
+    leaveChannel(voiceChannel, msg, 2000);
   }
 };
 
-const leaveChannel = (voiceChannel, msg) => {
+const leaveChannel = (voiceChannel, msg, timer) => {
   setTimeout(() => {
+    modifiers.loop = false;
+    shouldStartPlayMethod = true;
+    songs = [];
     voiceChannel.leave();
     return msg.channel.send(sendMessage('leave'));
-  }, 300000); // Leave the voice channel 5mins without song
+  }, timer);
 };
 
 // checkModifier will check if a modifier has been called by the user

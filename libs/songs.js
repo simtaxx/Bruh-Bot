@@ -9,7 +9,7 @@ const loopPlaylist = async({ songs, playYoutubeSong, voiceChannel, leaveChannel,
   if (songs && songs.length) {
     msg.channel.send(`Musique en cours - ${songs[0].title}`);
     playYoutubeSong(voiceChannel, msg);
-  } else leaveChannel(voiceChannel, msg);
+  } else leaveChannel(voiceChannel, msg, 2000);
 };
 
 module.exports = {
