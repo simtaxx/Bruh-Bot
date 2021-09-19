@@ -27,8 +27,7 @@ let commandMusicParam = null; // Second argument of a command like the URL or th
 let modifiers = { loop: false }; // The third argument of a command who will change the playlist behavior
 
 // Global vars
-let songs = null;
-const songsQueue = [];
+let songs = [];
 let shouldStartPlayMethod = true;
 
 client.on('ready', () => {
@@ -53,24 +52,17 @@ client.on('message', async msg => {
     } else if (commandMusicParam[0].startsWith('https://')) {
       checkModifier(commandMusicParam);
       if (commandMusicParam[0].match('playlist')) {
-        songsQueue.unshift(commandMusicParam[0]);
-      } else {
-        songsQueue.push(commandMusicParam[0]);
-      }
-      if (songsQueue && songsQueue[0].match('playlist')) {
-        const playlist = await ytpl(songsQueue[0]);
+        const playlist = await ytpl(commandMusicParam[0]);
         playlist.items.forEach((song) => {
-          songsQueue.push(song.shortUrl);
+          songs.push({title: song.title, url: song.shortUrl});
         });
-        songsQueue.splice(songsQueue.findIndex(song => song.match('playlist')), 1);
-        if (!songsQueue.length) shouldStartPlayMethod = true;
-        if (shouldStartPlayMethod) {
-          shouldStartPlayMethod = false;
-          playYoutubeSong(voiceChannel, msg);
-        }
+      } else {
+        const songObject = await ytdl.getBasicInfo(commandMusicParam[0]);
+        songs.push({title: songObject.videoDetails.title, url: songObject.videoDetails.video_url});
       }
-      if (songsQueue.length <= 1) {
-        playYoutubeSong(voiceChannel, msg);
+      if (shouldStartPlayMethod) {
+        shouldStartPlayMethod = false;
+        loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
       }
     } else {
       msg.channel.send(sendMessage('notFound'));
@@ -85,18 +77,15 @@ client.on('message', async msg => {
       if (songs) {
         modifiers.loop ? songs.push(songs.shift()) : songs.shift();
       }
-      if (songsQueue) {
-        modifiers.loop ? songsQueue.push(songsQueue.shift()) : songsQueue.shift();
-      }
       if (songs && songs.length) {
         msg.channel.send(`Musique en cours - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
         playYoutubeSong(voiceChannel, msg);
-      } else if (songsQueue &&  songsQueue.length) {
-        msg.channel.send(`Musique suivante`); // Display a message in a text channel who the bot has been called
-        playYoutubeSong(voiceChannel, msg);
       } else leaveChannel(voiceChannel, msg);
     }, 1000);
-  } else if (msg.content === 'replay' && songs) {
+  } else if (msg.content === 'replay') {
+    if (songs) {
+
+    }
     playYoutubeSong(voiceChannel, msg);
     msg.channel.send(sendMessage('replay', songs[0].title));
   } else if (msg.content === 'help') {
@@ -111,21 +100,15 @@ const playYoutubeSong = async(voiceChannel, msg) => {
       leaveChannel(voiceChannel, msg);
     }
     const connection = await voiceChannel.join(); // Join the user vocal channel
-    if (songsQueue && songsQueue[0].startsWith('https://')) {
-      await connection.play(ytdl(songsQueue[0], { filter: 'audioonly' })).on('finish', () => {
-        songsQueue.shift();
-        if (modifiers.loop) {
-          playYoutubeSong(voiceChannel, msg);
-        } else if (songsQueue.length) {
-          playYoutubeSong(voiceChannel, msg);
-        } else leaveChannel(voiceChannel, msg);
+    if (songs && songs[0].url.startsWith('https://')) {
+      await connection.play(ytdl(songs[0].url, { filter: 'audioonly' })).on('finish', () => {
+        modifiers.loop ? songs.push(songs.shift()) : songs.shift();
+        if (!songs.length) {
+          shouldStartPlayMethod = true;
+          leaveChannel(voiceChannel, msg);
+        }
+        loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
       });
-    } else {
-      await connection.play(ytdl(songs[0].url, { filter: 'audioonly' })) // play the song in the queue
-        .on('finish', () => { // when the song is over, the next song will be called
-          modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-          loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
-        });
     }
   } catch (e) {
     console.log("L'url ne correspond à aucune vidéo youtube", e);
@@ -140,7 +123,7 @@ const leaveChannel = (voiceChannel, msg) => {
   setTimeout(() => {
     voiceChannel.leave();
     return msg.channel.send(sendMessage('leave'));
-  }, 2000);
+  }, 300000); // Leave the voice channel 5mins without song
 };
 
 // checkModifier will check if a modifier has been called by the user
