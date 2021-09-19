@@ -18,7 +18,8 @@ const sendMessage = (command, ...param) => {
       - watiSon (une wati playlist)
 
     - TIPS : 
-      - ajouter "*loop" à la fin d'une commande playlist permet de la faire jouer infiniment`,
+      - ajouter "*loop" à la fin d'une commande playlist permet de la faire jouer infiniment
+        exemple "play https://www.youtube.com/watch?v=PqIMNE7QBSQ *loop"`,
     notFound: 'Je ne trouve pas de musique fraté :/',
     leave: 'Je me casse',
     replay: `${param[0]} va être rejoué`,
