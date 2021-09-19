@@ -85,8 +85,10 @@ client.on('message', async msg => {
     setTimeout(() => { // TODO: SUE A REAL TIMEOUT WHO WILL WAIT 1 SECOND AFTER THE SONG NEXTED
       if (songs && songs.length) {
         modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-        msg.channel.send(`Musique en cours - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
-        playYoutubeSong(voiceChannel, msg);
+        if (songs.length) {
+          msg.channel.send(`Musique en cours - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
+          playYoutubeSong(voiceChannel, msg);
+        } else leaveChannel(voiceChannel, msg, 2000);
       } else leaveChannel(voiceChannel, msg, 2000);
     }, 1000);
   } else if (msg.content === 'replay') {
