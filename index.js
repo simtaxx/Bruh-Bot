@@ -71,21 +71,18 @@ client.on('message', async msg => {
 
   if (msg.content === 'stop') {
     modifiers.loop = false;
+    shouldStartPlayMethod = true;
+    songs = [];
     voiceChannel.leave(); // The bot will leave the channel
   } else if (msg.content === 'next') {
     setTimeout(() => { // TODO: SUE A REAL TIMEOUT WHO WILL WAIT 1 SECOND AFTER THE SONG NEXTED
-      if (songs) {
-        modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-      }
       if (songs && songs.length) {
+        modifiers.loop ? songs.push(songs.shift()) : songs.shift();
         msg.channel.send(`Musique en cours - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
         playYoutubeSong(voiceChannel, msg);
       } else leaveChannel(voiceChannel, msg);
     }, 1000);
   } else if (msg.content === 'replay') {
-    if (songs) {
-
-    }
     playYoutubeSong(voiceChannel, msg);
     msg.channel.send(sendMessage('replay', songs[0].title));
   } else if (msg.content === 'help') {
@@ -100,19 +97,25 @@ const playYoutubeSong = async(voiceChannel, msg) => {
       leaveChannel(voiceChannel, msg);
     }
     const connection = await voiceChannel.join(); // Join the user vocal channel
-    if (songs && songs[0].url.startsWith('https://')) {
+    if (songs && songs.length && songs[0].url.startsWith('https://')) {
       await connection.play(ytdl(songs[0].url, { filter: 'audioonly' })).on('finish', () => {
+        if (msg.content === 'replay') {
+          playYoutubeSong(voiceChannel, msg);
+        }
         modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-        if (!songs.length) {
+        if (modifiers.loop) {
+          playYoutubeSong(voiceChannel, msg);
+        } else if (songs && songs.length) {
+          loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
+        } else {
           shouldStartPlayMethod = true;
           leaveChannel(voiceChannel, msg);
         }
-        loopPlaylist({ songs, playYoutubeSong, voiceChannel, leaveChannel, msg });
       });
     }
   } catch (e) {
     console.log("L'url ne correspond à aucune vidéo youtube", e);
-    if (!commandMusicParam[0].startsWith('https://')) {
+    if (!songs[0].url.startsWith('https://')) {
       modifiers.loop ? songs.push(songs.shift()) : songs.shift();
     }
     msg.channel.send(sendMessage('notFound'));
