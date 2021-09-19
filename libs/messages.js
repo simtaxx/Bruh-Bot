@@ -4,6 +4,8 @@ const sendMessage = (command, ...param) => {
   const messages = {
     help: `Voici les commandes dont tu as besoin:
 
+    - POUR ACTIVER LE BOT (BUG à CORRIGER) FAITES LA COMMANDE "stop"
+
     - COMMANDES GÉNÉRALES :
       - play "url de la vidéo youtube" OU "nom de la playlist"
       - next (passer à la prochaine musique d'une playlist)
