@@ -11,7 +11,7 @@ const rapFRChill = require('./assets/playlists/rapFRChill.json');
 const watiSon = require('./assets/playlists/watiSon.json');
 
 // Libraries
-const { formatSongs, loopPlaylist } = require('./libs/songs');
+const { formatSongs, loopPlaylist, styleMyText } = require('./libs/songs');
 const { sendMessage } = require('./libs/messages');
 
 // Playlists object
@@ -24,7 +24,10 @@ const playlists = {
 // Commands params
 let commandMusicIdentifier = null; // First argument of a command like 'play', 'next' etc ...
 let commandMusicParam = null; // Second argument of a command like the URL or the name of the playlist
-let modifiers = { loop: false }; // The third argument of a command who will change the playlist behavior
+let modifiers = { // The third argument of a command who will change the playlist behavior
+  loop: false,
+  loopAll: false
+};
 
 // Global vars
 let songs = [];
@@ -59,7 +62,15 @@ client.on('message', async msg => {
         if (playlist && playlist.items && playlist.items.length) {
           playlist.items.forEach((song) => {
             if (song.shortUrl.startsWith('https://')) {
-              songs.push({title: song.title, url: song.shortUrl});
+              songs.push({
+                title: song.title,
+                url: song.shortUrl,
+                channelLink: song.author.url,
+                author: song.author.name,
+                channelPic: song.thumbnails[0].url,
+                songPic: song.thumbnails[0].url,
+                description: song.author.name
+              });
             }
           });
         }
@@ -69,7 +80,15 @@ client.on('message', async msg => {
             msg.channel.send(sendMessage('notFound'));
           });
         if (songObject && songObject.videoDetails) {
-          songs.push({title: songObject.videoDetails.title, url: songObject.videoDetails.video_url});
+          songs.push({
+            title: songObject.videoDetails.title,
+            url: songObject.videoDetails.video_url,
+            channelLink: songObject.videoDetails.ownerProfileUrl,
+            author: songObject.videoDetails.ownerChannelName,
+            channelPic: songObject.videoDetails.author.thumbnails[0].url,
+            songPic: songObject.videoDetails.thumbnails[0].url,
+            description: `${songObject.videoDetails.description.slice(0, 200)} ...`
+          });
         }
       }
       if (shouldStartPlayMethod && (songs && songs.length)) {
@@ -81,26 +100,33 @@ client.on('message', async msg => {
     }
   }
 
+  const msgList = await msg.channel.messages.fetch({ limit: 10 });
+  msgList.forEach(el => el.content.startsWith('play ') || el.content.startsWith('p ') && el.delete());
+
   if (msg.content === 'stop') {
     modifiers.loop = false;
+    modifiers.loopAll = false;
     shouldStartPlayMethod = true;
     songs = [];
     voiceChannel.leave(); // The bot will leave the channel
   } else if (msg.content === 'next') {
-    setTimeout(() => { // TODO: SUE A REAL TIMEOUT WHO WILL WAIT 1 SECOND AFTER THE SONG NEXTED
-      if (songs && songs.length) {
-        modifiers.loop ? songs.push(songs.shift()) : songs.shift();
-        if (songs.length) {
-          msg.channel.send(`Musique en cours - ${songs[0].title}`); // Display a message in a text channel who the bot has been called
-          playYoutubeSong(voiceChannel, msg);
-        } else leaveChannel(voiceChannel, msg, 2000);
-      } else leaveChannel(voiceChannel, msg, 2000);
-    }, 1000);
+    if (songs && songs.length) {
+      songs.shift();
+      if (songs.length) {
+        msgList.forEach(el => el.author.id === '777560805448613899' && el.delete());
+        msg.channel.send(styleMyText('#0099ff', songs[0]));
+        playYoutubeSong(voiceChannel, msg);
+      } else leaveChannel(voiceChannel, msg, 0);
+    } else leaveChannel(voiceChannel, msg, 2000);
   } else if (msg.content === 'replay') {
     playYoutubeSong(voiceChannel, msg);
-    msg.channel.send(sendMessage('replay', songs[0].title));
-  } else if (msg.content === 'help') {
+    msg.channel.send(styleMyText('#0099ff', songs[0]));
+  } else if (msg.content === 'bruh-help') {
     msg.channel.send(sendMessage('help'));
+  } else if (msg.content === 'stopLoop') {
+    modifiers.loop = false;
+  } else if (msg.content === 'stopLoopAll') {
+    modifiers.loopAll = false;
   }
 });
 
@@ -116,7 +142,11 @@ const playYoutubeSong = async(voiceChannel, msg) => {
         if (msg.content === 'replay') {
           playYoutubeSong(voiceChannel, msg);
         }
-        modifiers.loop ? songs.push(songs.shift()) : songs.shift();
+        if (modifiers.loopAll) {
+          modifiers.loop ? songs.unshift(songs.shift()) : songs.push(songs.shift());
+        } else {
+          modifiers.loop ? songs.unshift(songs.shift()) : songs.shift();
+        }
         if (modifiers.loop) {
           playYoutubeSong(voiceChannel, msg);
         } else if (songs && songs.length) {
@@ -146,13 +176,13 @@ const leaveChannel = (voiceChannel, msg, timer) => {
 
 // checkModifier will check if a modifier has been called by the user
 const checkModifier = (commandMusicParam) => {
-  for (const property in modifiers) {
-    modifiers[property] = false;
-  }
   if (commandMusicParam[1]) {
     switch (commandMusicParam[1]) {
       case 'loop':
         modifiers.loop = true;
+        break;
+      case 'loopAll':
+        modifiers.loopAll = true;
         break;
     }
   }

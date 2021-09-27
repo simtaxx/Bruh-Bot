@@ -17,9 +17,19 @@ const sendMessage = (command, ...param) => {
       - rapFRChill (playlist rap fr pour se détendre)
       - watiSon (une wati playlist)
 
-    - TIPS : 
-      - ajouter "*loop" à la fin d'une commande playlist permet de la faire jouer infiniment
-        exemple "play https://www.youtube.com/watch?v=PqIMNE7QBSQ *loop"`,
+    - BONUS : 
+      - Ajouter "*loop" à la fin d'une commande "play <votre musique>" permet de la faire jouer infiniment
+        exemple "play https://www.youtube.com/watch?v=PqIMNE7QBSQ *loop"
+        - Pour annuler la loop utilisez "stopLoop"
+      - Ajouter "*loopAll" lorsque vous ajoutez une nouvelle musique dans la file d'attente pour faire
+        rejouer infiniment votre liste de musiques
+        - Pour annuler loopAll utilisez "stopLoopAll"
+        
+    - INFOS :
+      - Le bot est souvent mis à jour, pour être tenu au courrant des nouvelles features regardez si avec la commande bruh-help
+        il y a des nouveautés
+      - Si le bot à un problème pour rejoindre un salon ou autre, vérifier qu'il a bien un rôle lui permettant de rejoindre
+        un channel et d'autres droits, n'hésitez pas à lui donner un rôle d'admin.`,
     notFound: 'Je ne trouve pas de musique fraté :/',
     leave: 'Je me casse',
     replay: `${param[0]} va être rejoué`,
