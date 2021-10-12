@@ -3,7 +3,7 @@ require('dotenv').config();
 const ytdl = require('ytdl-core');
 const ytpl = require('ytpl');
 const Discord = require('discord.js');
-const client = new Discord.Client();
+const client = new Discord.Client({ intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES] });
 
 // All playlists import
 const rapUS2000 = require('./assets/playlists/rapUS2000.json');
